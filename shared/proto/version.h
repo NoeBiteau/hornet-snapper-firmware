@@ -1,0 +1,7 @@
+#ifndef HS_PROTO_VERSION_H
+#define HS_PROTO_VERSION_H
+
+#define HS_PROTO_VERSION_MAJOR 1
+#define HS_PROTO_VERSION_MINOR 0
+
+#endif
