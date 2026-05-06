@@ -8,6 +8,7 @@ endif()
 
 add_library(hs_proto STATIC
     crc16.c
+    uart_frame.c
 )
 target_include_directories(hs_proto PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
