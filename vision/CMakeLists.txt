@@ -13,6 +13,22 @@ target_sources(hs_vision PRIVATE
     src/clip_writer.cpp
     src/event_log.cpp)
 
+# ---------------------------------------------------------------------------
+# Optional: libcamera live capture (Pi5 only)
+# Enable with: cmake -DHS_VISION_LIBCAMERA=ON
+# Requires: libcamera-dev installed on the target system (pkg-config path).
+# ---------------------------------------------------------------------------
+option(HS_VISION_LIBCAMERA "Build LibcameraSource for Pi5 live capture" OFF)
+if(HS_VISION_LIBCAMERA)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(LIBCAMERA REQUIRED libcamera)
+    target_sources(hs_vision PRIVATE src/libcamera_source.cpp)
+    target_include_directories(hs_vision PRIVATE ${LIBCAMERA_INCLUDE_DIRS})
+    target_link_libraries(hs_vision PUBLIC ${LIBCAMERA_LIBRARIES})
+    target_compile_definitions(hs_vision PUBLIC HS_HAS_LIBCAMERA)
+    message(STATUS "HS_VISION_LIBCAMERA=ON — LibcameraSource enabled (libcamera ${LIBCAMERA_VERSION})")
+endif()
+
 enable_testing()
 
 # Fixture setup: ensure the synth video is built before any test that needs it

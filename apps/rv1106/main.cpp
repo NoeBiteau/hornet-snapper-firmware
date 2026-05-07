@@ -1,4 +1,7 @@
 // firmware/apps/rv1106/main.cpp
+#ifdef HS_HAS_LIBCAMERA
+#include "vision/libcamera_source.h"
+#endif
 #include "vision/video_file_source.h"
 #include "vision/motion_gate.h"
 #include "vision/mock_detector.h"
@@ -65,8 +68,12 @@ int main(int argc, char** argv) {
 
     std::unique_ptr<IFrameSource> src;
     if (a.live) {
+#ifdef HS_HAS_LIBCAMERA
+        src = std::make_unique<LibcameraSource>();
+#else
         std::fprintf(stderr, "--live requires HS_VISION_LIBCAMERA=ON build\n");
         return 3;
+#endif
     } else {
         src = std::make_unique<VideoFileSource>(a.video);
     }
