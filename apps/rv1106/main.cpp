@@ -9,6 +9,8 @@
 #include "vision/event_log.h"
 #include "hal/time.h"
 
+#include <nlohmann/json.hpp>
+
 #include <cstdio>
 #include <cstring>
 #include <fstream>
@@ -73,8 +75,43 @@ int main(int argc, char** argv) {
     MotionGate gate(src->width(), src->height());
     Tracker    tracker;
 
+    // Load a mock script from a JSON file at mock://path
+    auto load_mock_script = [](const std::string& uri)
+        -> std::vector<std::vector<Detection>>
+    {
+        std::string path = uri.substr(7); // strip "mock://"
+        std::ifstream f(path);
+        if (!f) {
+            std::fprintf(stderr, "mock script not found: %s\n", path.c_str());
+            return {};
+        }
+        auto j = nlohmann::json::parse(f, nullptr, /*exceptions=*/false);
+        if (!j.is_array()) {
+            std::fprintf(stderr, "mock script must be a JSON array: %s\n", path.c_str());
+            return {};
+        }
+        std::vector<std::vector<Detection>> script;
+        for (auto& frame : j) {
+            std::vector<Detection> dets;
+            if (frame.is_array()) {
+                for (auto& d : frame) {
+                    Detection det;
+                    det.bbox = cv::Rect(d["x"].get<int>(), d["y"].get<int>(),
+                                       d["w"].get<int>(), d["h"].get<int>());
+                    det.confidence = d["conf"].get<float>();
+                    det.cls = static_cast<ClassId>(d["cls"].get<int>());
+                    dets.push_back(det);
+                }
+            }
+            script.push_back(std::move(dets));
+        }
+        return script;
+    };
+
     std::unique_ptr<IDetector> det;
-    if (!a.model.empty()) {
+    if (a.model.substr(0, 7) == "mock://") {
+        det = std::make_unique<MockDetector>(load_mock_script(a.model));
+    } else if (!a.model.empty()) {
         OnnxDetector::Config cfg;
         cfg.model_path = a.model;
         cfg.input_size = 640;

@@ -64,3 +64,10 @@ add_test(NAME vision.clip_writer COMMAND test_clip_writer)
 add_executable(test_event_log tests/test_event_log.cpp)
 target_link_libraries(test_event_log PRIVATE hs_vision)
 add_test(NAME vision.event_log COMMAND test_event_log)
+
+add_executable(test_pipeline_e2e tests/test_pipeline_e2e.cpp)
+target_link_libraries(test_pipeline_e2e PRIVATE hs_vision nlohmann_json::nlohmann_json)
+add_test(NAME vision.pipeline_e2e COMMAND test_pipeline_e2e)
+set_tests_properties(vision.pipeline_e2e PROPERTIES
+    ENVIRONMENT "HS_BIN=$<TARGET_FILE:hornet_snapper_rv1106>;HS_FIXTURE_DIR=${HS_VISION_FIXTURE_DIR}"
+    FIXTURES_REQUIRED hs_vision_fixtures_built)
