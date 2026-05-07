@@ -8,7 +8,8 @@ target_sources(hs_vision PRIVATE
     src/motion_gate.cpp
     src/mock_detector.cpp
     src/onnx_detector.cpp
-    src/tracker.cpp)
+    src/tracker.cpp
+    src/confirmer.cpp)
 
 enable_testing()
 
@@ -49,3 +50,7 @@ set_tests_properties(vision.onnx_detector PROPERTIES
 add_executable(test_tracker tests/test_tracker.cpp)
 target_link_libraries(test_tracker PRIVATE hs_vision)
 add_test(NAME vision.tracker COMMAND test_tracker)
+
+add_executable(test_confirmer tests/test_confirmer.cpp)
+target_link_libraries(test_confirmer PRIVATE hs_vision)
+add_test(NAME vision.confirmer COMMAND test_confirmer)
