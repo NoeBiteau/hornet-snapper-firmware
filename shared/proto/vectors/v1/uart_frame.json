@@ -1,0 +1,26 @@
+{
+  "proto_version": {"major": 1, "minor": 0},
+  "uart_frames": [
+    {
+      "name": "empty",
+      "type": 6,
+      "seq": 0,
+      "payload_hex": "",
+      "wire_hex": "AA5500000600662E"
+    },
+    {
+      "name": "event_detect_v1",
+      "type": 2,
+      "seq": 66,
+      "payload_hex": "AF241A6801015B01F401900132003C000000C60E00000000",
+      "wire_hex": "AA5518000242AF241A6801015B01F401900132003C000000C60E00000000F226"
+    },
+    {
+      "name": "tilt_target_centered",
+      "type": 7,
+      "seq": 7,
+      "payload_hex": "1C021C02F4FF58010000",
+      "wire_hex": "AA550A0007071C021C02F4FF580100002066"
+    }
+  ]
+}
