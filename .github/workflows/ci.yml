@@ -1,0 +1,40 @@
+name: firmware CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  host-build-test:
+    name: host build + tests + vector drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y cmake build-essential
+
+      - name: Configure
+        run: cmake -B build -DHAL_TARGET=host
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Re-emit vectors and check no drift
+        run: |
+          ./build/tools/gen_vectors/gen_vectors > /tmp/uart_frame.json
+          diff -u shared/proto/vectors/v1/uart_frame.json /tmp/uart_frame.json
+
+      - name: Package vectors artifact
+        run: |
+          cd shared/proto
+          zip -r /tmp/vectors-v1.zip vectors/v1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vectors-v1
+          path: /tmp/vectors-v1.zip
