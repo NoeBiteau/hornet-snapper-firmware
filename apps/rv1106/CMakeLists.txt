@@ -1,2 +1,3 @@
-add_executable(app_rv1106 main.cpp)
-target_link_libraries(app_rv1106 PRIVATE hs_proto hs_hal)
+add_executable(hornet_snapper_rv1106 main.cpp)
+target_link_libraries(hornet_snapper_rv1106 PRIVATE hs_vision hs_proto hs_hal)
+target_compile_features(hornet_snapper_rv1106 PRIVATE cxx_std_17)

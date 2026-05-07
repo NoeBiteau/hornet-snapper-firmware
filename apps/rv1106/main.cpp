@@ -1,10 +1,131 @@
-#include <cstdio>
+// firmware/apps/rv1106/main.cpp
+#include "vision/video_file_source.h"
+#include "vision/motion_gate.h"
+#include "vision/mock_detector.h"
+#include "vision/onnx_detector.h"
+#include "vision/tracker.h"
+#include "vision/confirmer.h"
+#include "vision/clip_writer.h"
+#include "vision/event_log.h"
 #include "hal/time.h"
-#include "version.h"
 
-int main() {
-    std::printf("hornet-snapper-rv1106 boot proto v%d.%d unix=%u\n",
-                HS_PROTO_VERSION_MAJOR, HS_PROTO_VERSION_MINOR,
-                (unsigned)hs_time_unix());
+#include <cstdio>
+#include <cstring>
+#include <fstream>
+#include <memory>
+#include <sstream>
+#include <string>
+#include <vector>
+
+using namespace hs::vision;
+
+namespace {
+struct Args {
+    std::string video, model, data_dir = "/var/lib/hornet-snapper", zone;
+    bool live = false;
+    int max_frames = -1;
+};
+
+bool parse(int argc, char** argv, Args& a) {
+    for (int i = 1; i < argc; ++i) {
+        std::string k = argv[i];
+        auto next = [&](std::string& out){ if (++i >= argc) return false; out = argv[i]; return true; };
+        if      (k == "--video")        { if(!next(a.video)) return false; }
+        else if (k == "--live")         { a.live = true; }
+        else if (k == "--model")        { if(!next(a.model)) return false; }
+        else if (k == "--data-dir")     { if(!next(a.data_dir)) return false; }
+        else if (k == "--strike-zone")  { if(!next(a.zone)) return false; }
+        else if (k == "--max-frames")   { std::string v; if(!next(v)) return false; a.max_frames = std::stoi(v); }
+        else { std::fprintf(stderr, "unknown arg: %s\n", k.c_str()); return false; }
+    }
+    if (a.video.empty() && !a.live) { std::fprintf(stderr, "either --video or --live required\n"); return false; }
+    return true;
+}
+
+std::vector<cv::Point> parse_zone(const std::string& s) {
+    std::vector<cv::Point> out;
+    if (s.empty()) return out;
+    std::stringstream ss(s); std::string tok;
+    while (std::getline(ss, tok, ';')) {
+        size_t c = tok.find(',');
+        if (c == std::string::npos) continue;
+        out.emplace_back(std::stoi(tok.substr(0, c)), std::stoi(tok.substr(c + 1)));
+    }
+    return out;
+}
+}  // namespace
+
+int main(int argc, char** argv) {
+    Args a;
+    if (!parse(argc, argv, a)) return 2;
+    std::printf("hornet_snapper_rv1106 starting (video=%s model=%s data_dir=%s)\n",
+                a.video.c_str(), a.model.c_str(), a.data_dir.c_str());
+
+    std::unique_ptr<IFrameSource> src;
+    if (a.live) {
+        std::fprintf(stderr, "--live requires HS_VISION_LIBCAMERA=ON build\n");
+        return 3;
+    } else {
+        src = std::make_unique<VideoFileSource>(a.video);
+    }
+    if (!src->open()) { std::fprintf(stderr, "frame source open failed\n"); return 4; }
+
+    MotionGate gate(src->width(), src->height());
+    Tracker    tracker;
+
+    std::unique_ptr<IDetector> det;
+    if (!a.model.empty()) {
+        OnnxDetector::Config cfg;
+        cfg.model_path = a.model;
+        cfg.input_size = 640;
+        cfg.class_map = { {0, ClassId::Velutina}, {1, ClassId::Bee} };
+        det = std::make_unique<OnnxDetector>(std::move(cfg));
+    } else {
+        det = std::make_unique<MockDetector>(std::vector<std::vector<Detection>>{});
+    }
+    if (!det->init()) { std::fprintf(stderr, "detector init failed\n"); return 5; }
+
+    Confirmer::Params cp;
+    cp.strike_zone = parse_zone(a.zone);
+    Confirmer confirmer(cp);
+
+    ClipWriter::Params cwp;
+    cwp.fps = src->fps(); cwp.base_dir = a.data_dir + "/clips";
+    ClipWriter clipw(std::move(cwp));
+
+    EventLog evlog(a.data_dir + "/events.jsonl");
+    if (!evlog.open()) { std::fprintf(stderr, "event log open failed\n"); return 6; }
+
+    Frame f;
+    int frame_idx = 0;
+    while (src->read(f)) {
+        clipw.push(f.bgr);
+        clipw.tick();
+
+        auto rois = gate.process(f);
+        std::vector<cv::Rect> roi_rects;
+        for (auto& r : rois) roi_rects.push_back(r.bbox);
+
+        bool nn_ran = !roi_rects.empty() && (frame_idx % 6 == 0);
+        std::vector<Detection> dets;
+        if (nn_ran) dets = det->infer(f.bgr, roi_rects);
+        tracker.update(f.bgr, dets, nn_ran);
+
+        auto dec = confirmer.evaluate(tracker.tracks(), src->fps(), f.ts_us);
+        if (dec.fire) {
+            std::string clip_id = "ev_" + std::to_string(f.ts_us);
+            clipw.start_clip(clip_id, f.bgr.cols, f.bgr.rows);
+            evlog.write(dec, f.ts_us, clipw.current_path());
+            std::printf("FIRE track=%u cls=%d conf=%.2f bbox=[%d,%d,%d,%d] clip=%s\n",
+                        dec.track_id, (int)dec.cls, dec.confidence,
+                        dec.bbox.x, dec.bbox.y, dec.bbox.width, dec.bbox.height,
+                        clipw.current_path().c_str());
+        }
+        ++frame_idx;
+        if (a.max_frames > 0 && frame_idx >= a.max_frames) break;
+    }
+
+    src->close();
+    evlog.close();
     return 0;
 }
