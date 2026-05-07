@@ -4,7 +4,8 @@ target_link_libraries(hs_vision PUBLIC ${OpenCV_LIBS} onnxruntime nlohmann_json:
 target_compile_features(hs_vision PUBLIC cxx_std_17)
 # Sources added by later tasks
 target_sources(hs_vision PRIVATE
-    src/video_file_source.cpp)
+    src/video_file_source.cpp
+    src/motion_gate.cpp)
 
 enable_testing()
 
@@ -22,5 +23,12 @@ add_executable(test_video_file_source tests/test_video_file_source.cpp)
 target_link_libraries(test_video_file_source PRIVATE hs_vision)
 add_test(NAME vision.video_file_source COMMAND test_video_file_source)
 set_tests_properties(vision.video_file_source PROPERTIES
+    ENVIRONMENT "HS_FIXTURE_DIR=${HS_VISION_FIXTURE_DIR}"
+    FIXTURES_REQUIRED hs_vision_fixtures_built)
+
+add_executable(test_motion_gate tests/test_motion_gate.cpp)
+target_link_libraries(test_motion_gate PRIVATE hs_vision)
+add_test(NAME vision.motion_gate COMMAND test_motion_gate)
+set_tests_properties(vision.motion_gate PROPERTIES
     ENVIRONMENT "HS_FIXTURE_DIR=${HS_VISION_FIXTURE_DIR}"
     FIXTURES_REQUIRED hs_vision_fixtures_built)
