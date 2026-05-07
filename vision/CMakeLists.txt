@@ -10,7 +10,8 @@ target_sources(hs_vision PRIVATE
     src/onnx_detector.cpp
     src/tracker.cpp
     src/confirmer.cpp
-    src/clip_writer.cpp)
+    src/clip_writer.cpp
+    src/event_log.cpp)
 
 enable_testing()
 
@@ -59,3 +60,7 @@ add_test(NAME vision.confirmer COMMAND test_confirmer)
 add_executable(test_clip_writer tests/test_clip_writer.cpp)
 target_link_libraries(test_clip_writer PRIVATE hs_vision)
 add_test(NAME vision.clip_writer COMMAND test_clip_writer)
+
+add_executable(test_event_log tests/test_event_log.cpp)
+target_link_libraries(test_event_log PRIVATE hs_vision)
+add_test(NAME vision.event_log COMMAND test_event_log)
