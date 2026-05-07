@@ -11,18 +11,20 @@
 
 namespace hs::vision {
 
-// ---------------------------------------------------------------------------
-// Ultralytics YOLO11 class-index → hs::vision::ClassId mapping.
-// The training config must match this order:
-//   0 = bee, 1 = velutina, 2 = crabro, 3 = other_vespa
-// Anything out of range is mapped to Background (0).
-// ---------------------------------------------------------------------------
+// Class-index mapping for the user's trained YOLO11s model. See
+// firmware/models/velutina_yolo11s_640.json (the export side-car, key "names").
+//   0 amel   = Apis mellifera (honeybee)        -> Bee
+//   1 vcra   = Vespa crabro (European hornet)    -> Crabro
+//   2 vespsp = Vespa sp. (other vespa)           -> OtherVespa
+//   3 vvel   = Vespa velutina (TARGET)           -> Velutina
+//   4 vzon   = Vespa zonaria / Vespula           -> OtherVespa
 static ClassId yolo_class_to_id(int cls) {
     switch (cls) {
         case 0:  return ClassId::Bee;
-        case 1:  return ClassId::Velutina;
-        case 2:  return ClassId::Crabro;
-        case 3:  return ClassId::OtherVespa;
+        case 1:  return ClassId::Crabro;
+        case 2:  return ClassId::OtherVespa;
+        case 3:  return ClassId::Velutina;
+        case 4:  return ClassId::OtherVespa;
         default: return ClassId::Background;
     }
 }
@@ -131,7 +133,7 @@ std::vector<Detection> OnnxDetector::infer(const cv::Mat& bgr_frame,
     const float scale_x = static_cast<float>(bgr_frame.cols) / INPUT_W;
     const float scale_y = static_cast<float>(bgr_frame.rows) / INPUT_H;
 
-    std::vector<cv::Rect2f> boxes;
+    std::vector<cv::Rect2d> boxes;
     std::vector<float>      scores;
     std::vector<int>        class_ids;
 
