@@ -9,7 +9,8 @@ target_sources(hs_vision PRIVATE
     src/mock_detector.cpp
     src/onnx_detector.cpp
     src/tracker.cpp
-    src/confirmer.cpp)
+    src/confirmer.cpp
+    src/clip_writer.cpp)
 
 enable_testing()
 
@@ -54,3 +55,7 @@ add_test(NAME vision.tracker COMMAND test_tracker)
 add_executable(test_confirmer tests/test_confirmer.cpp)
 target_link_libraries(test_confirmer PRIVATE hs_vision)
 add_test(NAME vision.confirmer COMMAND test_confirmer)
+
+add_executable(test_clip_writer tests/test_clip_writer.cpp)
+target_link_libraries(test_clip_writer PRIVATE hs_vision)
+add_test(NAME vision.clip_writer COMMAND test_clip_writer)
