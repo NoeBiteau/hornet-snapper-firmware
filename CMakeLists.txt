@@ -22,7 +22,7 @@ option(HS_BUILD_VISION    "Build firmware/vision library and tests" ON)
 option(HS_VISION_LIBCAMERA "Build libcamera live FrameSource (Linux+Pi)" OFF)
 
 if(HS_BUILD_VISION)
-  find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs videoio video tracking)
+  find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs videoio video tracking dnn)
   include(FetchContent)
   FetchContent_Declare(json
     URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz

@@ -25,7 +25,16 @@ jobs:
       - name: Build
         run: cmake --build build --parallel
 
+      - name: Download ONNX model (optional — skips gracefully on 404)
+        run: |
+          curl -fsSL \
+            "https://github.com/NoeBiteau/hornet-snapper-firmware/releases/latest/download/velutina_yolo11s_640.onnx" \
+            -o firmware_model.onnx \
+            || echo "Model not available in releases; onnx_detector test will be skipped"
+
       - name: Test
+        env:
+          HS_MODEL_PATH: ${{ github.workspace }}/firmware_model.onnx
         run: ctest --test-dir build --output-on-failure
 
       - name: Re-emit vectors and check no drift

@@ -6,7 +6,8 @@ target_compile_features(hs_vision PUBLIC cxx_std_17)
 target_sources(hs_vision PRIVATE
     src/video_file_source.cpp
     src/motion_gate.cpp
-    src/mock_detector.cpp)
+    src/mock_detector.cpp
+    src/onnx_detector.cpp)
 
 enable_testing()
 
@@ -37,3 +38,9 @@ set_tests_properties(vision.motion_gate PROPERTIES
 add_executable(test_mock_detector tests/test_mock_detector.cpp)
 target_link_libraries(test_mock_detector PRIVATE hs_vision)
 add_test(NAME vision.mock_detector COMMAND test_mock_detector)
+
+add_executable(test_onnx_detector tests/test_onnx_detector.cpp)
+target_link_libraries(test_onnx_detector PRIVATE hs_vision)
+add_test(NAME vision.onnx_detector COMMAND test_onnx_detector)
+set_tests_properties(vision.onnx_detector PROPERTIES
+    SKIP_RETURN_CODE 77)
