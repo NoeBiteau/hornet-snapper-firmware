@@ -5,7 +5,8 @@ target_compile_features(hs_vision PUBLIC cxx_std_17)
 # Sources added by later tasks
 target_sources(hs_vision PRIVATE
     src/video_file_source.cpp
-    src/motion_gate.cpp)
+    src/motion_gate.cpp
+    src/mock_detector.cpp)
 
 enable_testing()
 
@@ -32,3 +33,7 @@ add_test(NAME vision.motion_gate COMMAND test_motion_gate)
 set_tests_properties(vision.motion_gate PROPERTIES
     ENVIRONMENT "HS_FIXTURE_DIR=${HS_VISION_FIXTURE_DIR}"
     FIXTURES_REQUIRED hs_vision_fixtures_built)
+
+add_executable(test_mock_detector tests/test_mock_detector.cpp)
+target_link_libraries(test_mock_detector PRIVATE hs_vision)
+add_test(NAME vision.mock_detector COMMAND test_mock_detector)
