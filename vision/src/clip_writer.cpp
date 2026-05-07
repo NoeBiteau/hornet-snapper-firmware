@@ -1,5 +1,6 @@
 // firmware/vision/src/clip_writer.cpp
 #include "vision/clip_writer.h"
+#include <opencv2/imgproc.hpp>
 #include <filesystem>
 #include <sstream>
 #include <ctime>

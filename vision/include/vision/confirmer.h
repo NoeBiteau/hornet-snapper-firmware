@@ -26,7 +26,8 @@ public:
         std::vector<cv::Point> strike_zone; // empty = "all"
         uint64_t cooldown_us = 1'000'000;   // 1 s
     };
-    explicit Confirmer(Params p = {});
+    Confirmer();
+    explicit Confirmer(Params p);
     ConfirmDecision evaluate(const std::vector<std::shared_ptr<Track>>& tracks,
                              double fps,
                              uint64_t now_us);

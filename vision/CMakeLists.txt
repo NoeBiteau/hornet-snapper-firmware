@@ -41,6 +41,10 @@ add_executable(test_frame_source_compile tests/test_frame_source_compile.cpp)
 target_link_libraries(test_frame_source_compile PRIVATE hs_vision)
 add_test(NAME vision.frame_source_compile COMMAND test_frame_source_compile)
 
+add_executable(test_public_headers_compile tests/test_public_headers_compile.cpp)
+target_link_libraries(test_public_headers_compile PRIVATE hs_vision)
+add_test(NAME vision.public_headers_compile COMMAND test_public_headers_compile)
+
 add_executable(test_video_file_source tests/test_video_file_source.cpp)
 target_link_libraries(test_video_file_source PRIVATE hs_vision)
 add_test(NAME vision.video_file_source COMMAND test_video_file_source)

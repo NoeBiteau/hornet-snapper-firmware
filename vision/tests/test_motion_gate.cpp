@@ -32,6 +32,7 @@ int main() {
         }
     }
     std::printf("blob frames: %d, fp frames: %d\n", frames_with_blob, frames_without);
+    std::fflush(stdout);
     assert(frames_with_blob >= 25);   // out of ~35 active blob frames
     assert(frames_without <= 3);      // small tolerance for BG settle artefacts
     return 0;

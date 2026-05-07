@@ -27,7 +27,8 @@ public:
         int   detect_w = 160;         // downscale target
         int   detect_h = 120;
     };
-    MotionGate(int src_w, int src_h, Params p = {});
+    MotionGate(int src_w, int src_h);
+    MotionGate(int src_w, int src_h, Params p);
     std::vector<MotionRoi> process(const Frame& f);
     void reset();
 private:

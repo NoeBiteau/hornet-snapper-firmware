@@ -29,6 +29,10 @@ struct Args {
     std::string video, model, data_dir = "/var/lib/hornet-snapper", zone;
     bool live = false;
     int max_frames = -1;
+    int confirm_min_age_frames = -1;
+    int confirm_class_min_match = -1;
+    uint64_t cooldown_us = UINT64_MAX;
+    double max_velocity_pps = -1.0;
 };
 
 bool parse(int argc, char** argv, Args& a) {
@@ -41,6 +45,10 @@ bool parse(int argc, char** argv, Args& a) {
         else if (k == "--data-dir")     { if(!next(a.data_dir)) return false; }
         else if (k == "--strike-zone")  { if(!next(a.zone)) return false; }
         else if (k == "--max-frames")   { std::string v; if(!next(v)) return false; a.max_frames = std::stoi(v); }
+        else if (k == "--confirm-min-age-frames") { std::string v; if(!next(v)) return false; a.confirm_min_age_frames = std::stoi(v); }
+        else if (k == "--confirm-class-min-match") { std::string v; if(!next(v)) return false; a.confirm_class_min_match = std::stoi(v); }
+        else if (k == "--cooldown-us") { std::string v; if(!next(v)) return false; a.cooldown_us = static_cast<uint64_t>(std::stoull(v)); }
+        else if (k == "--max-velocity-pps") { std::string v; if(!next(v)) return false; a.max_velocity_pps = std::stod(v); }
         else { std::fprintf(stderr, "unknown arg: %s\n", k.c_str()); return false; }
     }
     if (a.video.empty() && !a.live) { std::fprintf(stderr, "either --video or --live required\n"); return false; }
@@ -119,11 +127,7 @@ int main(int argc, char** argv) {
     if (a.model.substr(0, 7) == "mock://") {
         det = std::make_unique<MockDetector>(load_mock_script(a.model));
     } else if (!a.model.empty()) {
-        OnnxDetector::Config cfg;
-        cfg.model_path = a.model;
-        cfg.input_size = 640;
-        cfg.class_map = { {0, ClassId::Velutina}, {1, ClassId::Bee} };
-        det = std::make_unique<OnnxDetector>(std::move(cfg));
+        det = std::make_unique<OnnxDetector>(a.model);
     } else {
         det = std::make_unique<MockDetector>(std::vector<std::vector<Detection>>{});
     }
@@ -131,6 +135,10 @@ int main(int argc, char** argv) {
 
     Confirmer::Params cp;
     cp.strike_zone = parse_zone(a.zone);
+    if (a.confirm_min_age_frames >= 0) cp.min_age_frames = a.confirm_min_age_frames;
+    if (a.confirm_class_min_match >= 0) cp.class_min_match = a.confirm_class_min_match;
+    if (a.cooldown_us != UINT64_MAX) cp.cooldown_us = a.cooldown_us;
+    if (a.max_velocity_pps >= 0.0) cp.max_velocity_pps = static_cast<float>(a.max_velocity_pps);
     Confirmer confirmer(cp);
 
     ClipWriter::Params cwp;

@@ -4,6 +4,8 @@
 
 namespace hs::vision {
 
+MotionGate::MotionGate(int w, int h) : MotionGate(w, h, Params{}) {}
+
 MotionGate::MotionGate(int w, int h, Params p) : src_w_(w), src_h_(h), p_(p) {}
 
 void MotionGate::reset() { bg_.release(); bg_ready_ = false; }
@@ -31,8 +33,12 @@ std::vector<MotionRoi> MotionGate::process(const Frame& f) {
     cv::morphologyEx(scratch_mask_, scratch_mask_, cv::MORPH_OPEN,
                      cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3)));
 
-    // Update BG (running mean)
-    cv::addWeighted(bg_, 1.0f - p_.alpha, gray_f, p_.alpha, 0.0, bg_);
+    // Update BG only where the frame is currently stable. This keeps moving
+    // targets from being absorbed into the background model.
+    cv::Mat bg_next, stable_mask;
+    cv::addWeighted(bg_, 1.0f - p_.alpha, gray_f, p_.alpha, 0.0, bg_next);
+    cv::bitwise_not(scratch_mask_, stable_mask);
+    bg_next.copyTo(bg_, stable_mask);
 
     // Connected components
     cv::Mat labels, stats, centroids;

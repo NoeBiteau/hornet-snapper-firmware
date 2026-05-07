@@ -10,6 +10,8 @@ bool Confirmer::inside(const std::vector<cv::Point>& poly, cv::Point pt) {
     return cv::pointPolygonTest(poly, cv::Point2f(pt.x, pt.y), false) >= 0;
 }
 
+Confirmer::Confirmer() : Confirmer(Params{}) {}
+
 Confirmer::Confirmer(Params p) : p_(std::move(p)) {}
 
 ConfirmDecision Confirmer::evaluate(

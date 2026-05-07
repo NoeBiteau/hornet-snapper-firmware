@@ -2,6 +2,7 @@
 #pragma once
 #include "vision/detector.h"
 #include <opencv2/tracking.hpp>
+#include <opencv2/tracking/tracking_legacy.hpp>
 #include <deque>
 #include <memory>
 #include <vector>
@@ -18,6 +19,7 @@ struct Track {
     std::deque<cv::Rect> bbox_history;          // last 30
     std::deque<ClassId>  class_history;         // last 5
     std::deque<float>    conf_history;          // last 5
+    cv::Mat appearance_patch;
     cv::Ptr<cv::legacy::Tracker> mosse;
     bool alive = true;
 };
@@ -30,7 +32,8 @@ public:
         int   max_lost_frames = 5;
         int   max_age_frames  = 90;
     };
-    explicit Tracker(Params p = {});
+    Tracker();
+    explicit Tracker(Params p);
     void update(const cv::Mat& frame,
                 const std::vector<Detection>& nn_dets,
                 bool nn_ran_this_frame);

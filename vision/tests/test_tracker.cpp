@@ -29,10 +29,10 @@ int main() {
     std::printf("bbox.x after 6 frames: %d\n", t->bbox.x);
     assert(std::abs(t->bbox.x - 148) < 25);
 
-    // 7th non-NN frame is fine (less than max_lost_frames).
-    // After 6 frames without NN matches, frames_since_nn_match = 6 > 5 -> drop.
+    // Skipped-NN frames are bridged by the tracker and do not count as missed
+    // detector opportunities. Repeated NN passes with no match do retire it.
     frame.setTo(cv::Scalar(50, 60, 70));
-    tr.update(frame, {}, true);    // NN ran, no detections -> still no match
+    for (int i = 0; i < 6; ++i) tr.update(frame, {}, true);
     assert(tr.tracks().empty());
     return 0;
 }
