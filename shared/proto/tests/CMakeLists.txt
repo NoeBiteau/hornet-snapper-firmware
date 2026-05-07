@@ -10,4 +10,4 @@ add_executable(test_vectors_roundtrip test_vectors_roundtrip.c)
 target_link_libraries(test_vectors_roundtrip PRIVATE hs_proto)
 add_test(NAME vectors_roundtrip
          COMMAND test_vectors_roundtrip
-                 ${CMAKE_SOURCE_DIR}/vectors/v1/uart_frame.json)
+                 ${CMAKE_CURRENT_LIST_DIR}/../vectors/v1/uart_frame.json)
