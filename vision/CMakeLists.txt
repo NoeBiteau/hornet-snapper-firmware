@@ -7,7 +7,8 @@ target_sources(hs_vision PRIVATE
     src/video_file_source.cpp
     src/motion_gate.cpp
     src/mock_detector.cpp
-    src/onnx_detector.cpp)
+    src/onnx_detector.cpp
+    src/tracker.cpp)
 
 enable_testing()
 
@@ -44,3 +45,7 @@ target_link_libraries(test_onnx_detector PRIVATE hs_vision)
 add_test(NAME vision.onnx_detector COMMAND test_onnx_detector)
 set_tests_properties(vision.onnx_detector PROPERTIES
     SKIP_RETURN_CODE 77)
+
+add_executable(test_tracker tests/test_tracker.cpp)
+target_link_libraries(test_tracker PRIVATE hs_vision)
+add_test(NAME vision.tracker COMMAND test_tracker)
