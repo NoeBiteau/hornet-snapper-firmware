@@ -7,3 +7,7 @@ target_sources(hs_vision PRIVATE src/.gitkeep_placeholder.cpp)
 
 enable_testing()
 # Tests added by later tasks
+
+add_executable(test_frame_source_compile tests/test_frame_source_compile.cpp)
+target_link_libraries(test_frame_source_compile PRIVATE hs_vision)
+add_test(NAME vision.frame_source_compile COMMAND test_frame_source_compile)
