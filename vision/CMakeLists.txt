@@ -68,6 +68,11 @@ target_link_libraries(test_onnx_detector PRIVATE hs_vision)
 add_test(NAME vision.onnx_detector COMMAND test_onnx_detector)
 set_tests_properties(vision.onnx_detector PROPERTIES
     SKIP_RETURN_CODE 77)
+set(HS_LOCAL_ONNX_MODEL "${CMAKE_SOURCE_DIR}/models/velutina_yolo11s_640.onnx")
+if(EXISTS "${HS_LOCAL_ONNX_MODEL}")
+    set_tests_properties(vision.onnx_detector PROPERTIES
+        ENVIRONMENT "HS_MODEL_PATH=${HS_LOCAL_ONNX_MODEL}")
+endif()
 
 add_executable(test_tracker tests/test_tracker.cpp)
 target_link_libraries(test_tracker PRIVATE hs_vision)
