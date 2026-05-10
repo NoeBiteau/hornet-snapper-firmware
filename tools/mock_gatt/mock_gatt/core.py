@@ -204,12 +204,14 @@ class FixtureRig:
             calibration_status="metadata_only",
         )
     )
+    files: tuple[ClipFile, ...] | None = None
     disconnect_after_chunks: int | None = None
     feedback_items: list[FeedbackItem] = field(default_factory=list)
     acked_deletes: set[str] = field(default_factory=set)
 
     def __post_init__(self):
-        self.manifest = ClipManifest(self.rig_info, self.status, _fixture_files())
+        files = self.files if self.files is not None else _fixture_files()
+        self.manifest = ClipManifest(self.rig_info, self.status, files)
         self._files = {clip.name: clip for clip in self.manifest.files}
 
     def device_info_bytes(self) -> bytes:
@@ -380,3 +382,82 @@ def _fixture_files() -> tuple[ClipFile, ...]:
             bbox={"x": 0.12, "y": 0.22, "w": 0.21, "h": 0.19},
         ),
     )
+
+
+SCENARIO_SERIALS = {
+    "default": "HS-PI5-MOCK-0001",
+    "low-battery": "HS-PI5-MOCK-0002",
+    "stale-calibration": "HS-PI5-MOCK-0003",
+    "empty": "HS-PI5-MOCK-0004",
+}
+
+
+def fixture_fleet() -> tuple[FixtureRig, ...]:
+    return (
+        FixtureRig(),
+        FixtureRig(
+            rig_info=RigInfo(
+                rig_serial="HS-PI5-MOCK-0002",
+                fw="mock-r3-v0",
+                model="pi5-bluez-fixture",
+                hw_rev="mock-a",
+            ),
+            status=RigStatus(
+                uptime_s=4120,
+                sd_free_mb=12011,
+                battery=Battery(v_mv=3510, soc_pct=12, charging=False),
+                last_detection_ts=1778252100,
+                events_total=1248,
+                calibration_status="metadata_only",
+            ),
+        ),
+        FixtureRig(
+            rig_info=RigInfo(
+                rig_serial="HS-PI5-MOCK-0003",
+                fw="mock-r3-v0",
+                model="pi5-bluez-fixture",
+                hw_rev="mock-a",
+            ),
+            status=RigStatus(
+                uptime_s=28900,
+                sd_free_mb=11880,
+                battery=Battery(v_mv=3765, soc_pct=58, charging=False),
+                last_detection_ts=1778169600,
+                events_total=1189,
+                calibration_status="stale",
+            ),
+        ),
+        FixtureRig(
+            rig_info=RigInfo(
+                rig_serial="HS-PI5-MOCK-0004",
+                fw="mock-r3-v0",
+                model="pi5-bluez-fixture",
+                hw_rev="mock-a",
+            ),
+            status=RigStatus(
+                uptime_s=720,
+                sd_free_mb=12780,
+                battery=Battery(v_mv=3810, soc_pct=72, charging=True),
+                last_detection_ts=0,
+                events_total=0,
+                calibration_status="metadata_only",
+            ),
+            files=(),
+        ),
+    )
+
+
+def find_fixture_rig(serial: str) -> FixtureRig:
+    for rig in fixture_fleet():
+        if rig.rig_info.rig_serial == serial:
+            return rig
+    raise ValueError(f"unknown fixture rig: {serial}")
+
+
+def select_fixture_rig(serial: str | None = None, scenario: str = "default") -> FixtureRig:
+    if serial:
+        return find_fixture_rig(serial)
+    try:
+        return find_fixture_rig(SCENARIO_SERIALS[scenario])
+    except KeyError:
+        raise ValueError(f"unknown fixture scenario: {scenario}") from None

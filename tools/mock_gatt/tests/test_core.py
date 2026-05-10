@@ -110,5 +110,44 @@ class FixtureRigTests(unittest.TestCase):
             rig.capture_feedback({"file": file_name, "verdict": "maybe"})
 
 
+class FixtureFleetTests(unittest.TestCase):
+    def test_fixture_fleet_contains_deterministic_r3_1_scenarios(self):
+        fleet = core.fixture_fleet()
+
+        self.assertEqual(
+            [rig.rig_info.rig_serial for rig in fleet],
+            [
+                "HS-PI5-MOCK-0001",
+                "HS-PI5-MOCK-0002",
+                "HS-PI5-MOCK-0003",
+                "HS-PI5-MOCK-0004",
+            ],
+        )
+        self.assertEqual(fleet[0].status.battery.soc_pct, 64)
+        self.assertEqual(fleet[1].status.battery.soc_pct, 12)
+        self.assertEqual(fleet[2].status.calibration_status, "stale")
+        self.assertEqual(fleet[3].manifest.files, ())
+
+    def test_find_fixture_rig_returns_selected_serial_or_clear_error(self):
+        rig = core.find_fixture_rig("HS-PI5-MOCK-0002")
+
+        self.assertEqual(rig.rig_info.rig_serial, "HS-PI5-MOCK-0002")
+        self.assertEqual(rig.status.battery.v_mv, 3510)
+        with self.assertRaisesRegex(ValueError, "unknown fixture rig: HS-PI5-MOCK-9999"):
+            core.find_fixture_rig("HS-PI5-MOCK-9999")
+
+    def test_select_fixture_rig_maps_scenarios_without_changing_v0_schema(self):
+        low = core.select_fixture_rig(scenario="low-battery")
+        stale = core.select_fixture_rig(scenario="stale-calibration")
+        empty = core.select_fixture_rig(scenario="empty")
+
+        self.assertEqual(low.rig_info.rig_serial, "HS-PI5-MOCK-0002")
+        self.assertEqual(stale.rig_info.rig_serial, "HS-PI5-MOCK-0003")
+        self.assertEqual(empty.rig_info.rig_serial, "HS-PI5-MOCK-0004")
+        self.assertEqual(json.loads(empty.manifest_bytes("json").decode("utf-8"))["schema"], "hs.r3.gatt.v0")
+        with self.assertRaisesRegex(ValueError, "unknown fixture scenario: storm"):
+            core.select_fixture_rig(scenario="storm")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,7 +1,7 @@
 import io
 import sys
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -21,7 +21,51 @@ class BlueZShellTests(unittest.TestCase):
         self.assertIn("HS-INFO 0000fe40-0000-1000-8000-00805f9b34fb", text)
         self.assertIn("LIST_INDEX", text)
         self.assertIn("FILE_DATA wire: raw bytes", text)
+        self.assertIn("selected rig: HS-PI5-MOCK-0001", text)
+        self.assertIn("fixture fleet: 4 rigs", text)
         self.assertIn("fixture files: 2", text)
+
+    def test_list_rigs_prints_all_fixture_serials_without_adapter(self):
+        out = io.StringIO()
+
+        with redirect_stdout(out):
+            rc = bluez_server.main(["--list-rigs"])
+
+        self.assertEqual(rc, 0)
+        text = out.getvalue()
+        self.assertIn("HS-PI5-MOCK-0001 default", text)
+        self.assertIn("HS-PI5-MOCK-0002 low-battery", text)
+        self.assertIn("HS-PI5-MOCK-0003 stale-calibration", text)
+        self.assertIn("HS-PI5-MOCK-0004 empty", text)
+
+    def test_dry_run_can_select_rig_by_serial(self):
+        out = io.StringIO()
+
+        with redirect_stdout(out):
+            rc = bluez_server.main(["--dry-run", "--rig", "HS-PI5-MOCK-0003"])
+
+        self.assertEqual(rc, 0)
+        self.assertIn("selected rig: HS-PI5-MOCK-0003", out.getvalue())
+        self.assertIn("fixture files: 2", out.getvalue())
+
+    def test_dry_run_can_select_scenario(self):
+        out = io.StringIO()
+
+        with redirect_stdout(out):
+            rc = bluez_server.main(["--dry-run", "--scenario", "empty"])
+
+        self.assertEqual(rc, 0)
+        self.assertIn("selected rig: HS-PI5-MOCK-0004", out.getvalue())
+        self.assertIn("fixture files: 0", out.getvalue())
+
+    def test_invalid_rig_returns_nonzero_with_clear_message(self):
+        err = io.StringIO()
+
+        with redirect_stderr(err):
+            rc = bluez_server.main(["--dry-run", "--rig", "HS-PI5-MOCK-9999"])
+
+        self.assertEqual(rc, 2)
+        self.assertIn("unknown fixture rig: HS-PI5-MOCK-9999", err.getvalue())
 
     def test_run_without_bluez_dependency_returns_clear_error(self):
         out = io.StringIO()

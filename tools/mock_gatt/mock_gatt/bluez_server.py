@@ -4,7 +4,16 @@ import argparse
 import json
 import sys
 
-from .core import CHARACTERISTIC_UUIDS, SERVICE_UUIDS, FixtureRig, SimulatedDisconnect, _stable_json_bytes
+from .core import (
+    CHARACTERISTIC_UUIDS,
+    SCENARIO_SERIALS,
+    SERVICE_UUIDS,
+    FixtureRig,
+    SimulatedDisconnect,
+    fixture_fleet,
+    select_fixture_rig,
+    _stable_json_bytes,
+)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -12,14 +21,39 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--adapter", default="hci0", help="BlueZ adapter name for manual Pi5 runs")
     parser.add_argument("--dry-run", action="store_true", help="print the v0 GATT contract and exit")
     parser.add_argument("--manifest-encoding", choices=("cbor", "json"), default="cbor")
+    parser.add_argument("--list-rigs", action="store_true", help="print deterministic fixture rigs and exit")
+    parser.add_argument("--rig", help="select a fixture rig serial to serve")
+    parser.add_argument("--scenario", choices=tuple(SCENARIO_SERIALS), default="default", help="select a named fixture scenario")
     args = parser.parse_args(argv)
 
-    rig = FixtureRig()
+    if args.list_rigs:
+        _print_fixture_fleet()
+        return 0
+
+    try:
+        rig = select_fixture_rig(serial=args.rig, scenario=args.scenario)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
     if args.dry_run:
         _print_contract(rig, args.manifest_encoding)
         return 0
 
     return _serve_bluez(args.adapter, rig, args.manifest_encoding)
+
+
+def _print_fixture_fleet() -> None:
+    labels_by_serial = {serial: scenario for scenario, serial in SCENARIO_SERIALS.items()}
+    print(f"Hornet Snapper R3 fixture fleet: {len(fixture_fleet())} rigs")
+    for rig in fixture_fleet():
+        manifest = rig.manifest.to_dict()
+        print(
+            f"{rig.rig_info.rig_serial} {labels_by_serial[rig.rig_info.rig_serial]} "
+            f"battery={manifest['battery']['soc_pct']}% "
+            f"calibration={manifest['calibration_status']} "
+            f"files={len(manifest['files'])}"
+        )
 
 
 def _print_contract(rig: FixtureRig, manifest_encoding: str) -> None:
@@ -34,6 +68,8 @@ def _print_contract(rig: FixtureRig, manifest_encoding: str) -> None:
     print("FILE_DATA wire: raw bytes, <=244 bytes; chunk CRC comes from manifest.chunk_crc16")
     print("ACK_DELETE wire: JSON {'file': str}")
     print("FEEDBACK wire: JSON {'file': str, 'verdict': 'good-fire'|'false-positive', 'true_class'?: str}")
+    print(f"fixture fleet: {len(fixture_fleet())} rigs")
+    print(f"selected rig: {manifest['rig_serial']}")
     print(f"fixture rig: {manifest['rig_serial']} {manifest['fw']}")
     print(f"fixture files: {len(manifest['files'])}")
 
